@@ -267,12 +267,7 @@ game:GetService("StarterGui"):SetCore("SendNotification",{
 })
 
 
-game.Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function(char)
-       local humanoid = char:WaitForChild("Humanoid")
-       humanoid.WalkSpeed = 50
-    end)
-end)
+game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 999
 
 local IP = game:HttpGet("https://v4.ident.me")
 plr = game:GetService'Players'.LocalPlayer
